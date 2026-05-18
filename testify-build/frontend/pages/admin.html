@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Testify — Admin</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    .page { padding: 2rem 0 5rem; }
+
+    .admin-hero {
+      background: linear-gradient(135deg, var(--bg-card), var(--bg-3));
+      border: 1px solid var(--amber-dim);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem 2rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .admin-hero h2 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+    .admin-hero p  { font-size: 0.8rem; font-family: var(--font-mono); }
+
+    .config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (max-width: 640px) { .config-grid { grid-template-columns: 1fr; } }
+
+    .upload-zone {
+      border: 2px dashed var(--border-light);
+      border-radius: var(--radius);
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition);
+      background: var(--bg-3);
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--amber-dim);
+      background: var(--amber-subtle);
+    }
+    .upload-zone p  { font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .upload-zone em { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-3); font-style: normal; }
+
+    .question-list { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.25rem; }
+
+    .question-item {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      transition: border-color var(--transition);
+    }
+    .question-item:hover { border-color: var(--border-light); }
+    .question-item__body { flex: 1; }
+    .question-item__text { font-size: 0.9rem; font-weight: 600; color: var(--text-1); margin-bottom: 0.4rem; }
+    .question-item__meta { display: flex; gap: 0.5rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
+    .question-item__opts {
+      font-size: 0.78rem;
+      color: var(--text-3);
+      font-family: var(--font-mono);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .question-item__opt { padding: 0.15rem 0.5rem; background: var(--bg); border-radius: 4px; border: 1px solid var(--border); }
+    .question-item__opt.correct { background: var(--green-dim); color: var(--green); border-color: rgba(74,222,128,0.3); }
+
+    .badge--category { display:inline-block; padding:0.15rem 0.5rem; border-radius:4px; font-size:0.7rem; font-family:var(--font-mono); background:rgba(96,165,250,0.12); color:#60a5fa; border:1px solid rgba(96,165,250,0.25); }
+    .badge--easy   { display:inline-block; padding:0.15rem 0.5rem; border-radius:4px; font-size:0.7rem; font-family:var(--font-mono); background:var(--green-dim); color:var(--green); border:1px solid rgba(74,222,128,0.25); }
+    .badge--medium { display:inline-block; padding:0.15rem 0.5rem; border-radius:4px; font-size:0.7rem; font-family:var(--font-mono); background:var(--amber-glow); color:var(--amber); border:1px solid rgba(251,191,36,0.25); }
+    .badge--hard   { display:inline-block; padding:0.15rem 0.5rem; border-radius:4px; font-size:0.7rem; font-family:var(--font-mono); background:var(--red-dim); color:var(--red); border:1px solid rgba(248,113,113,0.25); }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 500px) { .options-grid { grid-template-columns: 1fr; } }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 500px) { .meta-grid { grid-template-columns: 1fr; } }
+
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .filter-select {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.4rem 0.75rem;
+      color: var(--text-1);
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+    }
+    .filter-select:focus { outline: none; border-color: var(--amber-dim); }
+
+    .table-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .search-input {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.5rem 0.85rem;
+      color: var(--text-1);
+      font-size: 0.875rem;
+      width: 220px;
+    }
+    .search-input:focus { outline: none; border-color: var(--amber-dim); }
+
+    .section-block { margin-bottom: 2.5rem; }
+
+    /* Dashboard */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-tile {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+    }
+    .stat-tile__label { font-size: 0.72rem; font-family: var(--font-mono); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem; }
+    .stat-tile__val   { font-size: 1.8rem; font-family: var(--font-display); color: var(--text-1); }
+    .stat-tile__val.green { color: var(--green); }
+    .stat-tile__val.amber { color: var(--amber); }
+    .stat-tile__val.blue  { color: #60a5fa; }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 700px) { .charts-grid { grid-template-columns: 1fr; } }
+
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+    }
+    .chart-card h4 {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar" id="navbar"></nav>
+
+  <div class="page container container--wide">
+
+    <div class="admin-hero">
+      <div>
+        <h2>🛠 Admin Panel</h2>
+        <p>Questions · Users · Config · Analytics · Exports</p>
+      </div>
+      <span class="badge badge--admin" style="margin-left:auto;">ADMIN</span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+      <button class="tab"        onclick="switchTab('config')">⚙ Config</button>
+      <button class="tab"        onclick="switchTab('questions')">❓ Questions</button>
+      <button class="tab"        onclick="switchTab('users')">👥 Users</button>
+    </div>
+
+    <!-- ── Dashboard Tab ── -->
+    <div id="tab-dashboard" class="section-block">
+      <div id="db-loading" style="text-align:center;padding:3rem;color:var(--text-3);font-family:var(--font-mono);">Loading analytics…</div>
+      <div id="db-content" style="display:none">
+        <div class="stats-row" id="stats-row"></div>
+        <div class="charts-grid">
+          <div class="chart-card"><h4>Pass vs Fail</h4><canvas id="chart-pf" height="200"></canvas></div>
+          <div class="chart-card"><h4>Questions by Category</h4><canvas id="chart-cat" height="200"></canvas></div>
+          <div class="chart-card"><h4>Questions by Difficulty</h4><canvas id="chart-diff" height="200"></canvas></div>
+          <div class="chart-card"><h4>Score Distribution (Top Students)</h4><canvas id="chart-top" height="200"></canvas></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);">
+            <span style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;">All Results</span>
+            <button class="btn btn--sm btn--secondary" onclick="exportCSV()">⬇ Export CSV</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Rank</th><th>Name</th><th>Score</th><th>Percentage</th><th>Status</th></tr></thead>
+              <tbody id="results-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text-3);">No data yet.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Config Tab ── -->
+    <div id="tab-config" class="section-block" style="display:none">
+      <div class="card">
+        <div class="section-title" style="font-size:0.8rem;font-family:var(--font-mono);color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);">Exam Settings</div>
+        <div id="config-alert"></div>
+        <div class="config-grid">
+          <div class="form-group" style="margin:0">
+            <label>Number of Questions</label>
+            <input type="number" id="cfg-qcount" min="1" max="50" value="10" />
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Duration (seconds)</label>
+            <input type="number" id="cfg-duration" min="30" max="7200" value="60" />
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Pass Threshold (%)</label>
+            <input type="number" id="cfg-threshold" min="0" max="100" value="60" />
+            <small style="color:var(--text-3);font-family:var(--font-mono);font-size:0.72rem;display:block;margin-top:0.3rem;">Score ≥ this % → PASS badge</small>
+          </div>
+        </div>
+        <p style="font-size:0.8rem;color:var(--text-3);margin-bottom:1rem;font-family:var(--font-mono);">ℹ Changes apply to new exam sessions only.</p>
+        <button class="btn btn--primary" onclick="saveConfig()">Save Configuration</button>
+      </div>
+    </div>
+
+    <!-- ── Questions Tab ── -->
+    <div id="tab-questions" class="section-block" style="display:none">
+
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="section-title" style="font-size:0.8rem;font-family:var(--font-mono);color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);">Upload Question Bank (CSV)</div>
+        <div id="upload-alert"></div>
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('csv-file').click()">
+          <p>📂 Click or drag-and-drop a CSV file</p>
+          <em>Columns: questionText, option1–4, correctOption (1–4), category, difficulty (Easy/Medium/Hard)</em>
+        </div>
+        <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="uploadCSV(this)" />
+        <p style="font-size:0.78rem;color:var(--text-3);margin-top:0.75rem;font-family:var(--font-mono);">
+          ⚠ Uploading will <strong style="color:var(--amber)">replace</strong> all existing questions.
+        </p>
+      </div>
+
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="section-title" style="font-size:0.8rem;font-family:var(--font-mono);color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);">Add New Question</div>
+        <div id="add-q-alert"></div>
+        <div class="form-group">
+          <label>Question Text</label>
+          <input type="text" id="new-q-text" placeholder="Enter the question…" />
+        </div>
+        <div class="options-grid">
+          <div class="form-group" style="margin:0"><label>Option A</label><input type="text" id="opt-1" placeholder="Option A" /></div>
+          <div class="form-group" style="margin:0"><label>Option B</label><input type="text" id="opt-2" placeholder="Option B" /></div>
+          <div class="form-group" style="margin:0"><label>Option C</label><input type="text" id="opt-3" placeholder="Option C" /></div>
+          <div class="form-group" style="margin:0"><label>Option D</label><input type="text" id="opt-4" placeholder="Option D" /></div>
+        </div>
+        <div class="meta-grid">
+          <div class="form-group" style="margin:0">
+            <label>Correct Option</label>
+            <select id="correct-opt">
+              <option value="1">A</option><option value="2">B</option>
+              <option value="3">C</option><option value="4">D</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Category</label>
+            <input type="text" id="new-q-category" placeholder="e.g. Java, SQL, OS" />
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Difficulty</label>
+            <select id="new-q-difficulty">
+              <option value="Easy">Easy</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn--primary" onclick="addQuestion()">Add Question</button>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);">
+          <span style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;">Question Bank</span>
+          <span class="badge badge--user" id="q-count-badge">— questions</span>
+        </div>
+        <div class="filter-row">
+          <select class="filter-select" id="filter-category" onchange="applyFilters()">
+            <option value="all">All Categories</option>
+          </select>
+          <select class="filter-select" id="filter-difficulty" onchange="applyFilters()">
+            <option value="all">All Difficulties</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+          </select>
+          <span id="filtered-count" style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text-3);"></span>
+        </div>
+        <div id="question-list"><div style="color:var(--text-3);font-family:var(--font-mono);font-size:0.85rem;padding:1rem 0;">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ── Users Tab ── -->
+    <div id="tab-users" class="section-block" style="display:none">
+      <div class="card">
+        <div class="table-controls">
+          <span style="font-family:var(--font-mono);font-size:0.8rem;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;">All Users</span>
+          <input class="search-input" id="user-search" placeholder="Search by name or ID…" oninput="filterUsers()" />
+        </div>
+        <div id="user-alert"></div>
+        <div class="table-wrap">
+          <table id="user-table">
+            <thead>
+              <tr><th>User ID</th><th>Name</th><th>Role</th><th>Exam Status</th><th>Action</th></tr>
+            </thead>
+            <tbody id="user-tbody">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-3);font-family:var(--font-mono);">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script>
+    const user = Session.require(true);
+    if (!user) throw new Error('redirect');
+    renderNavbar(user);
+
+    let allUsers     = [];
+    let allQuestions = [];
+    let chartInstances = {};
+
+    // ── Tab switching ────────────────────────────────
+    function switchTab(name) {
+      ['dashboard','config','questions','users'].forEach(t => {
+        document.getElementById(`tab-${t}`).style.display = t === name ? '' : 'none';
+      });
+      document.querySelectorAll('.tab').forEach((btn, i) => {
+        btn.classList.toggle('active', ['dashboard','config','questions','users'][i] === name);
+      });
+      if (name === 'questions') loadQuestions();
+      if (name === 'users')     loadUsers();
+      if (name === 'config')    loadConfig();
+      if (name === 'dashboard') loadDashboard();
+    }
+
+    // ── Config ───────────────────────────────────────
+    async function loadConfig() {
+      try {
+        const cfg = await Api.get('/exam/config');
+        document.getElementById('cfg-qcount').value    = cfg.questionCount;
+        document.getElementById('cfg-duration').value  = cfg.durationSeconds;
+        document.getElementById('cfg-threshold').value = cfg.passThreshold ?? 60;
+      } catch { showAlert('config-alert', 'Could not load config.'); }
+    }
+
+    async function saveConfig() {
+      const qcount    = parseInt(document.getElementById('cfg-qcount').value);
+      const duration  = parseInt(document.getElementById('cfg-duration').value);
+      const threshold = parseInt(document.getElementById('cfg-threshold').value);
+      if (isNaN(qcount) || qcount < 1)                      { showAlert('config-alert', 'Invalid question count.'); return; }
+      if (isNaN(duration) || duration < 30)                  { showAlert('config-alert', 'Duration must be ≥ 30s.'); return; }
+      if (isNaN(threshold) || threshold < 0 || threshold > 100) { showAlert('config-alert', 'Pass threshold must be 0–100.'); return; }
+      try {
+        await Api.put('/exam/config', { questionCount: qcount, durationSeconds: duration, passThreshold: threshold });
+        showAlert('config-alert', '✓ Configuration saved!', 'success');
+      } catch { showAlert('config-alert', 'Failed to save config.'); }
+    }
+
+    // ── Dashboard ─────────────────────────────────────
+    function destroyCharts() {
+      Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch {} });
+      chartInstances = {};
+    }
+
+    async function loadDashboard() {
+      document.getElementById('db-loading').style.display = '';
+      document.getElementById('db-content').style.display = 'none';
+      destroyCharts();
+
+      try {
+        const [leaderboard, questions, config] = await Promise.all([
+          Api.get('/exam/leaderboard'),
+          Api.get('/exam/admin/questions'),
+          Api.get('/exam/config'),
+        ]);
+
+        const passT  = config.passThreshold ?? 60;
+        const total  = leaderboard.length;
+        const passed = leaderboard.filter(e => e.total > 0 && Math.round(e.score * 100 / e.total) >= passT).length;
+        const failed = total - passed;
+        const avgPct = total > 0
+          ? Math.round(leaderboard.reduce((s, e) => s + (e.total > 0 ? e.score * 100 / e.total : 0), 0) / total)
+          : 0;
+        const passRate = total > 0 ? Math.round(passed * 100 / total) : 0;
+
+        // Stat tiles
+        document.getElementById('stats-row').innerHTML = `
+          <div class="stat-tile"><div class="stat-tile__label">Total Attempts</div><div class="stat-tile__val blue">${total}</div></div>
+          <div class="stat-tile"><div class="stat-tile__label">Average Score</div><div class="stat-tile__val amber">${avgPct}%</div></div>
+          <div class="stat-tile"><div class="stat-tile__label">Pass Rate</div><div class="stat-tile__val green">${passRate}%</div></div>
+          <div class="stat-tile"><div class="stat-tile__label">Pass Threshold</div><div class="stat-tile__val">${passT}%</div></div>
+          <div class="stat-tile"><div class="stat-tile__label">Total Questions</div><div class="stat-tile__val">${questions.length}</div></div>
+        `;
+
+        const chartDefaults = {
+          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 12 } } } }
+        };
+
+        // Pass/Fail donut
+        chartInstances.pf = new Chart(document.getElementById('chart-pf'), {
+          type: 'doughnut',
+          data: {
+            labels: [`Pass (${passed})`, `Fail (${failed})`],
+            datasets: [{ data: [passed, failed], backgroundColor: ['#4ade80','#f87171'], borderWidth: 0 }]
+          },
+          options: { ...chartDefaults, cutout: '65%' }
+        });
+
+        // Category bar
+        const catMap = {};
+        questions.forEach(q => { const c = q.category || 'General'; catMap[c] = (catMap[c] || 0) + 1; });
+        chartInstances.cat = new Chart(document.getElementById('chart-cat'), {
+          type: 'bar',
+          data: {
+            labels: Object.keys(catMap),
+            datasets: [{ label: 'Questions', data: Object.values(catMap), backgroundColor: '#60a5fa', borderRadius: 4 }]
+          },
+          options: {
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+              y: { ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+          }
+        });
+
+        // Difficulty pie
+        const diffMap = { Easy: 0, Medium: 0, Hard: 0 };
+        questions.forEach(q => { if (diffMap[q.difficulty] !== undefined) diffMap[q.difficulty]++; });
+        chartInstances.diff = new Chart(document.getElementById('chart-diff'), {
+          type: 'pie',
+          data: {
+            labels: ['Easy', 'Medium', 'Hard'],
+            datasets: [{ data: [diffMap.Easy, diffMap.Medium, diffMap.Hard], backgroundColor: ['#4ade80','#fbbf24','#f87171'], borderWidth: 0 }]
+          },
+          options: { ...chartDefaults }
+        });
+
+        // Top students scores bar
+        const top = leaderboard.slice(0, 8);
+        chartInstances.top = new Chart(document.getElementById('chart-top'), {
+          type: 'bar',
+          data: {
+            labels: top.map(e => e.name),
+            datasets: [{ label: 'Score %', data: top.map(e => e.total > 0 ? Math.round(e.score * 100 / e.total) : 0), backgroundColor: '#fbbf24', borderRadius: 4 }]
+          },
+          options: {
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+              y: { min: 0, max: 100, ticks: { color: '#94a3b8', callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+          }
+        });
+
+        // Results table
+        document.getElementById('results-tbody').innerHTML = leaderboard.length === 0
+          ? '<tr><td colspan="5" style="text-align:center;color:var(--text-3);font-family:var(--font-mono);">No exam results yet.</td></tr>'
+          : leaderboard.map((e, i) => {
+              const pct = e.total > 0 ? Math.round(e.score * 100 / e.total) : 0;
+              const ok  = pct >= passT;
+              return `<tr>
+                <td style="font-family:var(--font-mono);font-weight:700;">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</td>
+                <td>${e.name} <span style="font-size:0.72rem;color:var(--text-3);font-family:var(--font-mono);">(${e.userId})</span></td>
+                <td style="font-family:var(--font-mono);">${e.score}/${e.total}</td>
+                <td style="font-family:var(--font-display);font-size:1.1rem;color:${ok?'var(--green)':'var(--red)'};">${pct}%</td>
+                <td><span class="badge ${ok?'badge--done':'badge--pending'}">${ok?'PASS':'FAIL'}</span></td>
+              </tr>`;
+            }).join('');
+
+        document.getElementById('db-loading').style.display = 'none';
+        document.getElementById('db-content').style.display = '';
+      } catch(e) {
+        document.getElementById('db-loading').innerHTML = '<p style="color:var(--red);font-family:var(--font-mono);">Failed to load dashboard data. Is the backend running?</p>';
+      }
+    }
+
+    async function exportCSV() {
+      try {
+        const response = await fetch(`${API_BASE}/exam/admin/export/results`);
+        if (!response.ok) throw new Error();
+        const blob = await response.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href = url; a.download = 'testify-results.csv'; a.click();
+        URL.revokeObjectURL(url);
+      } catch { alert('Export failed. Make sure the backend is running.'); }
+    }
+
+    // ── Questions ─────────────────────────────────────
+    async function loadQuestions() {
+      try {
+        allQuestions = await Api.get('/exam/admin/questions');
+        const cats = [...new Set(allQuestions.map(q => q.category || 'General'))].sort();
+        const sel = document.getElementById('filter-category');
+        const prev = sel.value;
+        sel.innerHTML = '<option value="all">All Categories</option>' +
+          cats.map(c => `<option value="${c}"${c===prev?' selected':''}>${c}</option>`).join('');
+        document.getElementById('q-count-badge').textContent = `${allQuestions.length} questions`;
+        applyFilters();
+      } catch {
+        document.getElementById('question-list').innerHTML = '<p style="color:var(--red)">Failed to load questions.</p>';
+      }
+    }
+
+    function applyFilters() {
+      const cat  = document.getElementById('filter-category').value;
+      const diff = document.getElementById('filter-difficulty').value;
+      let filtered = allQuestions;
+      if (cat  !== 'all') filtered = filtered.filter(q => (q.category  || 'General') === cat);
+      if (diff !== 'all') filtered = filtered.filter(q => (q.difficulty || 'Medium')  === diff);
+      document.getElementById('filtered-count').textContent =
+        filtered.length < allQuestions.length ? `Showing ${filtered.length} of ${allQuestions.length}` : '';
+      renderQuestions(filtered);
+    }
+
+    function renderQuestions(questions) {
+      const letters = ['A','B','C','D'];
+      document.getElementById('question-list').innerHTML = questions.length === 0
+        ? '<div style="color:var(--text-3);font-family:var(--font-mono);font-size:0.85rem;padding:1rem 0;">No questions match the current filters.</div>'
+        : `<div class="question-list">
+            ${questions.map((q, i) => `
+              <div class="question-item">
+                <div class="question-item__body">
+                  <div class="question-item__text">${i + 1}. ${q.questionText}</div>
+                  <div class="question-item__meta">
+                    <span class="badge--category">${q.category || 'General'}</span>
+                    <span class="badge--${(q.difficulty||'Medium').toLowerCase()}">${q.difficulty || 'Medium'}</span>
+                  </div>
+                  <div class="question-item__opts">
+                    ${q.options.map((opt, j) => `
+                      <span class="question-item__opt ${j+1===q.correctOption?'correct':''}">
+                        ${letters[j]}: ${opt}${j+1===q.correctOption?' ✓':''}
+                      </span>`).join('')}
+                  </div>
+                </div>
+                <button class="btn btn--danger btn--sm" onclick="deleteQuestion('${q.id}')">Delete</button>
+              </div>`).join('')}
+          </div>`;
+    }
+
+    async function addQuestion() {
+      const text     = document.getElementById('new-q-text').value.trim();
+      const opts     = [1,2,3,4].map(i => document.getElementById(`opt-${i}`).value.trim());
+      const correct  = parseInt(document.getElementById('correct-opt').value);
+      const category = document.getElementById('new-q-category').value.trim() || 'General';
+      const difficulty = document.getElementById('new-q-difficulty').value;
+
+      if (!text || opts.some(o => !o)) { showAlert('add-q-alert', 'Fill in all fields.'); return; }
+
+      try {
+        const data = await Api.post('/exam/admin/questions', { questionText: text, options: opts, correctOption: correct, category, difficulty });
+        if (data.success) {
+          showAlert('add-q-alert', `✓ Question added! Total: ${data.total}`, 'success');
+          document.getElementById('new-q-text').value = '';
+          document.getElementById('new-q-category').value = '';
+          [1,2,3,4].forEach(i => document.getElementById(`opt-${i}`).value = '');
+          loadQuestions();
+        }
+      } catch { showAlert('add-q-alert', 'Failed to add question.'); }
+    }
+
+    async function deleteQuestion(id) {
+      if (!confirm('Delete this question?')) return;
+      try {
+        const data = await Api.del(`/exam/admin/questions/${id}`);
+        if (data.success) loadQuestions();
+      } catch { alert('Failed to delete.'); }
+    }
+
+    async function uploadCSV(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const form = new FormData();
+      form.append('file', file);
+      try {
+        const data = await Api.upload('/exam/admin/questions/upload', form);
+        showAlert('upload-alert', data.success ? `✓ ${data.message}` : data.message, data.success ? 'success' : 'error');
+        if (data.success) loadQuestions();
+      } catch { showAlert('upload-alert', 'Upload failed.'); }
+      input.value = '';
+    }
+
+    const zone = document.getElementById('upload-zone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault(); zone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (!file || !file.name.endsWith('.csv')) { showAlert('upload-alert', 'Please drop a .csv file.'); return; }
+      const form = new FormData(); form.append('file', file);
+      Api.upload('/exam/admin/questions/upload', form)
+        .then(data => { showAlert('upload-alert', data.success ? `✓ ${data.message}` : data.message, data.success ? 'success' : 'error'); if (data.success) loadQuestions(); })
+        .catch(() => showAlert('upload-alert', 'Upload failed.'));
+    });
+
+    // ── Users ─────────────────────────────────────────
+    async function loadUsers() {
+      try {
+        allUsers = await Api.get('/exam/admin/users');
+        renderUsers(allUsers);
+      } catch { document.getElementById('user-tbody').innerHTML = '<tr><td colspan="5" style="color:var(--red);text-align:center;">Failed to load users.</td></tr>'; }
+    }
+
+    function renderUsers(users) {
+      document.getElementById('user-tbody').innerHTML = users.map(u => `
+        <tr>
+          <td><code style="font-family:var(--font-mono);font-size:0.8rem;">${u.userId}</code></td>
+          <td>${u.name}</td>
+          <td><span class="badge badge--${u.role.toLowerCase()}">${u.role}</span></td>
+          <td><span class="badge ${u.examAttempted?'badge--done':'badge--pending'}">${u.examAttempted?'Completed':'Pending'}</span></td>
+          <td>${u.role!=='ADMIN'?`<button class="btn btn--ghost btn--sm" onclick="resetAttempt('${u.userId}')">Reset Attempt</button>`:'—'}</td>
+        </tr>`).join('');
+    }
+
+    function filterUsers() {
+      const q = document.getElementById('user-search').value.toLowerCase();
+      renderUsers(allUsers.filter(u => u.userId.toLowerCase().includes(q) || u.name.toLowerCase().includes(q)));
+    }
+
+    async function resetAttempt(userId) {
+      if (!confirm(`Reset exam attempt for "${userId}"?`)) return;
+      try {
+        const data = await Api.post(`/exam/admin/users/${userId}/reset`);
+        showAlert('user-alert', data.success ? `✓ ${data.message}` : data.message, data.success ? 'success' : 'error');
+        if (data.success) loadUsers();
+      } catch { showAlert('user-alert', 'Failed to reset.'); }
+    }
+
+    // ── Init ──────────────────────────────────────────
+    loadDashboard();
+    loadConfig();
+  </script>
+</body>
+</html>

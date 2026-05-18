@@ -1,0 +1,4 @@
+userId,password,name,role,examAttempted,email
+admin,admin123,Administrator,ADMIN,false,
+user123,pass123,Test User,USER,true,
+akash11,Akash@11,AppuAkash,USER,true,appuakash1511@gmail.com

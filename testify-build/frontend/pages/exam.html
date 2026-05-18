@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Testify — Exam in Progress</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    body { display:flex; flex-direction:column; min-height:100vh; }
+
+    /* ── Exam Header ── */
+    .exam-header {
+      position:sticky; top:0; z-index:50;
+      background:rgba(11,12,15,0.95); backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border); padding:0.75rem 1.5rem;
+      transition:background var(--transition);
+    }
+    [data-theme="light"] .exam-header {
+      background:rgba(245,245,240,0.95);
+    }
+    .exam-header__inner {
+      max-width:860px; margin:0 auto;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:1rem; flex-wrap:wrap;
+    }
+    .exam-header__title { font-family:var(--font-display); font-size:1.1rem; color:var(--text-1); }
+    .exam-header__right { display:flex; align-items:center; gap:1rem; }
+
+    /* Timer */
+    .timer {
+      display:flex; align-items:center; gap:0.5rem;
+      font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:var(--text-1);
+      background:var(--bg-3); border:1px solid var(--border); border-radius:var(--radius);
+      padding:0.4rem 1rem; transition:all 0.3s;
+    }
+    .timer.warning { color:var(--amber); border-color:var(--amber-dim); background:var(--amber-glow); animation:pulse 1s infinite; }
+    .timer.danger  { color:var(--red); border-color:rgba(248,113,113,0.4); background:var(--red-dim); animation:pulse 0.6s infinite; }
+
+    /* Time progress bar */
+    .progress-bar-wrap { width:100%; height:3px; background:var(--border); }
+    .progress-bar      { height:100%; background:var(--amber); transition:width 1s linear; }
+
+    /* ── Answered progress strip ── */
+    .answered-strip {
+      max-width:860px; margin:1.25rem auto 0; width:100%; padding:0 1.5rem;
+      display:flex; align-items:center; gap:0.75rem;
+    }
+    .answered-strip__bar-wrap {
+      flex:1; height:6px; background:var(--bg-3); border-radius:100px; overflow:hidden;
+    }
+    .answered-strip__bar {
+      height:100%; background:var(--green); border-radius:100px; transition:width 0.3s ease;
+    }
+    .answered-strip__text {
+      font-family:var(--font-mono); font-size:0.75rem; color:var(--text-3); white-space:nowrap;
+    }
+
+    /* ── Main exam area ── */
+    .exam-body { flex:1; max-width:860px; margin:0 auto; width:100%; padding:1.5rem 1.5rem 5rem; }
+
+    /* Question nav dots */
+    .q-nav-wrap { margin-bottom:1.5rem; }
+    .q-nav-label {
+      font-family:var(--font-mono); font-size:0.7rem; color:var(--text-3);
+      text-transform:uppercase; letter-spacing:0.08em; margin-bottom:0.6rem;
+    }
+    .q-nav { display:flex; gap:0.4rem; flex-wrap:wrap; }
+
+    .q-dot {
+      width:34px; height:34px; border-radius:7px;
+      border:1px solid var(--border); background:var(--bg-3);
+      font-size:0.72rem; font-family:var(--font-mono); color:var(--text-3);
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      transition:all var(--transition); position:relative;
+    }
+    .q-dot:hover    { border-color:var(--amber-dim); color:var(--amber); }
+    .q-dot.answered { background:var(--amber-glow); border-color:var(--amber-dim); color:var(--amber); }
+    .q-dot.flagged  { background:rgba(248,113,113,0.12); border-color:rgba(248,113,113,0.4); color:var(--red); }
+    .q-dot.answered.flagged { background:rgba(248,113,113,0.15); border-color:rgba(248,113,113,0.4); color:var(--red); }
+    .q-dot.current  { background:var(--amber); border-color:var(--amber); color:#0b0c0f; font-weight:700; }
+    .q-dot.flagged::after {
+      content:'🚩'; position:absolute; top:-5px; right:-5px;
+      font-size:0.6rem; line-height:1;
+    }
+
+    /* Legend */
+    .q-legend {
+      display:flex; gap:1rem; flex-wrap:wrap;
+      margin-top:0.6rem; margin-bottom:1.25rem;
+    }
+    .q-legend-item {
+      display:flex; align-items:center; gap:0.35rem;
+      font-family:var(--font-mono); font-size:0.68rem; color:var(--text-3);
+    }
+    .q-legend-dot {
+      width:10px; height:10px; border-radius:3px; border:1px solid;
+    }
+
+    /* Question card */
+    .question-card {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--radius-lg); padding:2rem;
+      animation:fadeIn 0.25s ease;
+    }
+    .question-card__top {
+      display:flex; align-items:flex-start; justify-content:space-between;
+      gap:1rem; margin-bottom:0.75rem;
+    }
+    .question-card__num {
+      font-family:var(--font-mono); font-size:0.75rem; color:var(--text-3);
+      text-transform:uppercase; letter-spacing:0.08em;
+    }
+    .flag-btn {
+      display:flex; align-items:center; gap:0.35rem;
+      padding:0.3rem 0.75rem; border-radius:100px;
+      font-size:0.75rem; font-family:var(--font-mono);
+      border:1px solid var(--border); background:var(--bg-3); color:var(--text-3);
+      cursor:pointer; transition:all var(--transition); white-space:nowrap;
+    }
+    .flag-btn:hover      { border-color:rgba(248,113,113,0.4); color:var(--red); background:rgba(248,113,113,0.08); }
+    .flag-btn.flagged    { border-color:rgba(248,113,113,0.4); color:var(--red); background:rgba(248,113,113,0.12); }
+
+    .question-card__text {
+      font-size:1.1rem; font-weight:600; color:var(--text-1);
+      margin-bottom:1.5rem; line-height:1.55;
+    }
+
+    /* Options */
+    .options { display:flex; flex-direction:column; gap:0.75rem; }
+    .option {
+      display:flex; align-items:center; gap:1rem;
+      padding:0.9rem 1.25rem; background:var(--bg-3);
+      border:1px solid var(--border); border-radius:var(--radius);
+      cursor:pointer; transition:all var(--transition); user-select:none;
+    }
+    .option:hover   { border-color:var(--amber-dim); background:var(--amber-subtle); }
+    .option.selected { border-color:var(--amber); background:var(--amber-glow); box-shadow:0 0 0 1px var(--amber-dim); }
+    .option__letter {
+      width:28px; height:28px; border-radius:6px;
+      background:var(--bg); border:1px solid var(--border-light);
+      display:flex; align-items:center; justify-content:center;
+      font-family:var(--font-mono); font-size:0.75rem; font-weight:700;
+      color:var(--text-2); flex-shrink:0; transition:all var(--transition);
+    }
+    .option.selected .option__letter { background:var(--amber); border-color:var(--amber); color:#0b0c0f; }
+    .option__text { font-size:0.95rem; color:var(--text-1); }
+
+    /* Nav buttons */
+    .question-nav {
+      display:flex; justify-content:space-between; align-items:center;
+      margin-top:1.5rem; gap:1rem;
+    }
+
+    /* Submit overlay */
+    .submit-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px);
+      display:flex; align-items:center; justify-content:center; z-index:300; padding:1rem;
+    }
+    .submit-box {
+      background:var(--bg-card); border:1px solid var(--border-light);
+      border-radius:var(--radius-lg); padding:2.5rem; max-width:480px; width:100%;
+      text-align:center; animation:fadeIn 0.25s ease;
+    }
+    .submit-box h2 { margin-bottom:0.75rem; }
+    .submit-box p  { margin-bottom:1.5rem; font-size:0.9rem; }
+    .submit-summary {
+      display:flex; justify-content:center; gap:1.5rem; flex-wrap:wrap;
+      padding:1rem; background:var(--bg-3); border-radius:var(--radius);
+      margin-bottom:1.5rem;
+    }
+    .submit-summary__item { text-align:center; }
+    .submit-summary__val  { font-family:var(--font-display); font-size:1.5rem; display:block; }
+    .submit-summary__lbl  { font-family:var(--font-mono); font-size:0.68rem; color:var(--text-3); text-transform:uppercase; }
+    .submit-box__actions  { display:flex; gap:0.75rem; justify-content:center; }
+
+    /* Warning overlay (tab-leave) */
+    .warn-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px);
+      display:flex; align-items:center; justify-content:center; z-index:400; padding:1rem;
+    }
+    .warn-box {
+      background:var(--bg-card); border:1px solid rgba(248,113,113,0.4);
+      border-radius:var(--radius-lg); padding:2.5rem; max-width:420px; width:100%;
+      text-align:center; animation:fadeIn 0.2s ease;
+      box-shadow:0 0 40px rgba(248,113,113,0.15);
+    }
+    .warn-box__icon { font-size:2.5rem; margin-bottom:1rem; display:block; }
+    .warn-box h2 { color:var(--red); margin-bottom:0.5rem; }
+    .warn-box p  { font-size:0.875rem; margin-bottom:1.5rem; }
+    .warn-box__actions { display:flex; gap:0.75rem; justify-content:center; }
+
+    .loading-state {
+      text-align:center; padding:4rem 0;
+      display:flex; flex-direction:column; align-items:center; gap:1rem;
+    }
+    .loading-state p { font-family:var(--font-mono); font-size:0.85rem; color:var(--text-3); }
+
+    @media (max-width: 600px) {
+      .exam-body { padding:1rem 0.75rem 5rem; }
+      .question-card { padding:1.25rem; }
+      .question-card__text { font-size:1rem; }
+      .option { padding:0.75rem 1rem; }
+      .q-dot { width:30px; height:30px; font-size:0.68rem; }
+      .exam-header { padding:0.6rem 0.75rem; }
+      .exam-header__title { font-size:0.9rem; }
+      .submit-box { padding:1.5rem; }
+      .question-nav { flex-direction:column; gap:0.5rem; }
+      .question-nav .btn { width:100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Exam Header -->
+  <div class="exam-header">
+    <div class="exam-header__inner">
+      <span class="exam-header__title">📋 Exam in Progress</span>
+      <div class="exam-header__right">
+        <div class="timer" id="timer">--:--</div>
+        <button class="theme-toggle" onclick="Theme.toggle()" title="Toggle theme" style="padding:0.3rem 0.6rem;">
+          <span class="theme-toggle__icon">☀️</span>
+        </button>
+        <button class="btn btn--secondary btn--sm" onclick="confirmSubmit()">Submit</button>
+      </div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progress-bar" style="width:100%"></div>
+    </div>
+  </div>
+
+  <!-- Main Body -->
+  <div class="exam-body" id="exam-body">
+    <div class="loading-state">
+      <div class="spinner" style="width:32px;height:32px;border-width:3px;"></div>
+      <p>Loading exam questions…</p>
+    </div>
+  </div>
+
+  <!-- Submit Confirmation Overlay -->
+  <div class="submit-overlay" id="submit-overlay" style="display:none">
+    <div class="submit-box">
+      <h2>Submit Exam?</h2>
+      <div class="submit-summary" id="submit-summary"></div>
+      <p id="submit-msg">Are you sure you want to submit?</p>
+      <div class="submit-box__actions">
+        <button class="btn btn--ghost" id="cancel-submit-btn" onclick="cancelSubmit()">Go Back</button>
+        <button class="btn btn--primary" onclick="doSubmit()" id="confirm-submit-btn">Submit Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab-Leave Warning Overlay -->
+  <div class="warn-overlay" id="warn-overlay" style="display:none">
+    <div class="warn-box">
+      <span class="warn-box__icon">⚠️</span>
+      <h2>Warning!</h2>
+      <p>You switched away from this tab. <strong>Please stay on this page</strong> during the exam. Leaving multiple times may result in auto-submission.</p>
+      <div class="warn-box__actions">
+        <button class="btn btn--primary" onclick="dismissWarn()">I understand, continue</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script>
+    const user = Session.require();
+    if (!user) throw new Error('redirect');
+    if (user.examAttempted) { location.href = 'dashboard.html'; }
+
+    // Sync theme icon
+    Theme._updateToggles(Theme.get());
+
+    // ── Auto-save key ─────────────────────────────────
+    const SAVE_KEY = 'ep_exam_draft_' + user.userId;
+
+    function saveProgress() {
+      AutoSave.show(true);
+      try {
+        const draft = {
+          answers,
+          flagged: [...flagged],
+          currentIndex,
+          timeLeft,
+          savedAt: Date.now()
+        };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(draft));
+      } catch(e) {}
+      AutoSave.show(false);
+    }
+
+    function loadProgress() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return false;
+        const draft = JSON.parse(raw);
+        // Only restore if saved within the last 24h
+        if (Date.now() - draft.savedAt > 86400000) {
+          localStorage.removeItem(SAVE_KEY);
+          return false;
+        }
+        answers      = draft.answers || {};
+        flagged      = new Set(draft.flagged || []);
+        currentIndex = draft.currentIndex || 0;
+        if (draft.timeLeft && draft.timeLeft > 0) timeLeft = draft.timeLeft;
+        return Object.keys(answers).length > 0;
+      } catch(e) { return false; }
+    }
+
+    function clearProgress() {
+      localStorage.removeItem(SAVE_KEY);
+    }
+
+    // ── State ──────────────────────────────────────────
+    let questions    = [];
+    let answers      = {};   // questionId -> option (1-indexed)
+    let flagged      = new Set(); // set of questionIds
+    let currentIndex = 0;
+    let timerInterval;
+    let timeLeft, totalDuration;
+    let autoSubmitting = false;
+    let tabWarnCount   = 0;
+    let autoSaveTimer  = null;
+
+    // ── Load Questions ─────────────────────────────────
+    async function loadExam() {
+      try {
+        const data = await Api.get('/exam/questions');
+        if (data.error) {
+          document.getElementById('exam-body').innerHTML = `
+            <div class="loading-state">
+              <p style="color:var(--red)">⚠ ${data.message}</p>
+              <a class="btn btn--ghost" href="dashboard.html">Return to Dashboard</a>
+            </div>`;
+          return;
+        }
+        if (!data.questions || data.questions.length === 0) {
+          document.getElementById('exam-body').innerHTML = `
+            <div class="loading-state">
+              <p style="color:var(--red)">⚠ No questions available yet. Please contact your administrator.</p>
+              <a class="btn btn--ghost" href="dashboard.html">Return to Dashboard</a>
+            </div>`;
+          return;
+        }
+        questions = data.questions;
+        timeLeft = totalDuration = data.durationSeconds;
+
+        // Restore saved progress (page refresh recovery)
+        const hadDraft = loadProgress();
+        if (!hadDraft) {
+          timeLeft = data.durationSeconds;
+        }
+        totalDuration = data.durationSeconds; // always use server value for bar
+        if (currentIndex >= questions.length) currentIndex = 0;
+
+        renderExam();
+        startTimer();
+        startVisibilityWatcher();
+
+        // Auto-save every 10 seconds
+        autoSaveTimer = setInterval(saveProgress, 10000);
+      } catch (err) {
+        const msg = err.message.includes('fetch')
+          ? 'Cannot reach the server. Is the backend running on port 8080?'
+          : 'Failed to load exam. ' + err.message;
+        document.getElementById('exam-body').innerHTML = `
+          <div class="loading-state">
+            <p style="color:var(--red)">⚠ ${msg}</p>
+            <a class="btn btn--ghost" href="dashboard.html">Return to Dashboard</a>
+          </div>`;
+      }
+    }
+
+    // ── Render ─────────────────────────────────────────
+    function renderExam() {
+      const body = document.getElementById('exam-body');
+      body.innerHTML = `
+        <!-- Answered Progress Strip -->
+        <div class="answered-strip">
+          <div class="answered-strip__bar-wrap">
+            <div class="answered-strip__bar" id="answered-bar" style="width:0%"></div>
+          </div>
+          <span class="answered-strip__text" id="answered-text">0 / ${questions.length} answered</span>
+        </div>
+
+        <!-- Question Navigator Dots -->
+        <div class="q-nav-wrap" style="margin-top:1.25rem;">
+          <div class="q-nav-label">Questions</div>
+          <div class="q-nav" id="q-nav"></div>
+          <div class="q-legend">
+            <div class="q-legend-item"><div class="q-legend-dot" style="background:var(--amber-glow);border-color:var(--amber-dim);"></div> Answered</div>
+            <div class="q-legend-item"><div class="q-legend-dot" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.4);"></div> Flagged for Review</div>
+            <div class="q-legend-item"><div class="q-legend-dot" style="background:var(--bg-3);border-color:var(--border);"></div> Not Visited</div>
+          </div>
+        </div>
+
+        <!-- Question Area -->
+        <div id="question-area"></div>
+
+        <!-- Prev / Next -->
+        <div class="question-nav">
+          <button class="btn btn--ghost" id="prev-btn" onclick="navigate(-1)">← Prev</button>
+          <button class="btn btn--secondary" id="next-btn" onclick="navigate(1)">Next →</button>
+        </div>`;
+
+      renderDots();
+      renderQuestion();
+    }
+
+    function renderDots() {
+      const nav = document.getElementById('q-nav');
+      nav.innerHTML = questions.map((q, i) => {
+        const isCurrent  = i === currentIndex;
+        const isAnswered = !!answers[q.id];
+        const isFlagged  = flagged.has(q.id);
+        let cls = 'q-dot';
+        if (isCurrent)  cls += ' current';
+        if (isAnswered) cls += ' answered';
+        if (isFlagged)  cls += ' flagged';
+        return `<div class="${cls}" onclick="goTo(${i})" title="Q${i+1}${isFlagged ? ' — Flagged' : ''}">${i + 1}</div>`;
+      }).join('');
+
+      const done = Object.keys(answers).length;
+      const pct  = questions.length ? (done / questions.length) * 100 : 0;
+      const bar  = document.getElementById('answered-bar');
+      const txt  = document.getElementById('answered-text');
+      if (bar) bar.style.width = pct + '%';
+      if (txt) txt.textContent = `${done} / ${questions.length} answered`;
+
+      const prevBtn = document.getElementById('prev-btn');
+      const nextBtn = document.getElementById('next-btn');
+      if (prevBtn) prevBtn.disabled = currentIndex === 0;
+      if (nextBtn) {
+        const isLast = currentIndex === questions.length - 1;
+        nextBtn.textContent = isLast ? 'Review & Submit' : 'Next →';
+        nextBtn.onclick     = isLast ? confirmSubmit : () => navigate(1);
+      }
+    }
+
+    function renderQuestion() {
+      const q   = questions[currentIndex];
+      const sel = answers[q.id];
+      const isFlagged = flagged.has(q.id);
+      const letters   = ['A','B','C','D'];
+
+      document.getElementById('question-area').innerHTML = `
+        <div class="question-card">
+          <div class="question-card__top">
+            <div class="question-card__num">Question ${currentIndex + 1} of ${questions.length}</div>
+            <button class="flag-btn ${isFlagged ? 'flagged' : ''}" id="flag-btn" onclick="toggleFlag('${q.id}')">
+              ${isFlagged ? '🚩 Flagged' : '🏳 Flag for Review'}
+            </button>
+          </div>
+          <div class="question-card__text">${q.questionText}</div>
+          <div class="options">
+            ${q.options.map((opt, i) => `
+              <div class="option ${sel === i + 1 ? 'selected' : ''}"
+                   onclick="selectAnswer('${q.id}', ${i + 1})">
+                <span class="option__letter">${letters[i]}</span>
+                <span class="option__text">${opt}</span>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    function selectAnswer(questionId, optionNum) {
+      answers[questionId] = optionNum;
+      renderQuestion();
+      renderDots();
+      saveProgress();
+    }
+
+    function toggleFlag(questionId) {
+      if (flagged.has(questionId)) flagged.delete(questionId);
+      else flagged.add(questionId);
+      renderQuestion();
+      renderDots();
+      saveProgress();
+    }
+
+    function navigate(dir) {
+      const next = currentIndex + dir;
+      if (next >= 0 && next < questions.length) {
+        currentIndex = next;
+        renderQuestion(); renderDots();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function goTo(index) {
+      currentIndex = index;
+      renderQuestion(); renderDots();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ── Timer ──────────────────────────────────────────
+    function startTimer() {
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        updateProgressBar();
+        if (timeLeft <= 0) { clearInterval(timerInterval); autoSubmit(); }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const el = document.getElementById('timer');
+      el.textContent = formatTime(timeLeft);
+      el.className = 'timer';
+      if      (timeLeft <= 30) el.classList.add('danger');
+      else if (timeLeft <= 60) el.classList.add('warning');
+    }
+
+    function updateProgressBar() {
+      const pct = (timeLeft / totalDuration) * 100;
+      document.getElementById('progress-bar').style.width = pct + '%';
+    }
+
+    // ── Tab Visibility Watcher ─────────────────────────
+    function startVisibilityWatcher() {
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden && !autoSubmitting && !user.examAttempted) {
+          tabWarnCount++;
+          if (tabWarnCount >= 3) {
+            // Auto-submit after 3 violations
+            autoSubmit();
+          } else {
+            document.getElementById('warn-overlay').style.display = 'flex';
+          }
+        }
+      });
+    }
+
+    function dismissWarn() {
+      document.getElementById('warn-overlay').style.display = 'none';
+    }
+
+    // ── Submit ─────────────────────────────────────────
+    function confirmSubmit() {
+      const answered  = Object.keys(answers).length;
+      const unanswered = questions.length - answered;
+      const flaggedCount = flagged.size;
+
+      document.getElementById('submit-summary').innerHTML = `
+        <div class="submit-summary__item">
+          <span class="submit-summary__val" style="color:var(--green)">${answered}</span>
+          <span class="submit-summary__lbl">Answered</span>
+        </div>
+        <div class="submit-summary__item">
+          <span class="submit-summary__val" style="color:var(--text-3)">${unanswered}</span>
+          <span class="submit-summary__lbl">Unanswered</span>
+        </div>
+        <div class="submit-summary__item">
+          <span class="submit-summary__val" style="color:var(--red)">${flaggedCount}</span>
+          <span class="submit-summary__lbl">Flagged</span>
+        </div>`;
+
+      let msg = '';
+      if (flaggedCount > 0) msg += `⚑ You have <strong>${flaggedCount}</strong> flagged question(s) not yet reviewed. `;
+      if (unanswered > 0)   msg += `<strong>${unanswered}</strong> question(s) are unanswered.`;
+      if (!msg)             msg = `All ${questions.length} questions answered. Ready to submit!`;
+      document.getElementById('submit-msg').innerHTML = msg;
+
+      document.getElementById('cancel-submit-btn').style.display = '';
+      document.getElementById('confirm-submit-btn').textContent = 'Submit Now';
+      document.getElementById('confirm-submit-btn').disabled = false;
+      document.getElementById('submit-overlay').style.display = 'flex';
+    }
+
+    function cancelSubmit() {
+      if (!autoSubmitting) document.getElementById('submit-overlay').style.display = 'none';
+    }
+
+    function autoSubmit() {
+      autoSubmitting = true;
+      const answered   = Object.keys(answers).length;
+      const unanswered = questions.length - answered;
+      document.getElementById('submit-summary').innerHTML = `
+        <div class="submit-summary__item">
+          <span class="submit-summary__val" style="color:var(--green)">${answered}</span>
+          <span class="submit-summary__lbl">Answered</span>
+        </div>
+        <div class="submit-summary__item">
+          <span class="submit-summary__val" style="color:var(--text-3)">${unanswered}</span>
+          <span class="submit-summary__lbl">Unanswered</span>
+        </div>`;
+      document.getElementById('submit-overlay').style.display = 'flex';
+      document.getElementById('submit-msg').innerHTML = '⏰ Time\'s up! Auto-submitting your exam…';
+      document.getElementById('cancel-submit-btn').style.display = 'none';
+      document.getElementById('confirm-submit-btn').textContent = 'Submitting…';
+      doSubmit();
+    }
+
+    async function doSubmit() {
+      clearInterval(timerInterval);
+      const btn = document.getElementById('confirm-submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Submitting…';
+      try {
+        const result = await Api.post('/exam/submit', { userId: user.userId, answers });
+        clearProgress();
+        clearInterval(autoSaveTimer);
+        sessionStorage.setItem('ep_result', JSON.stringify(result));
+        user.examAttempted = true;
+        Session.set(user);
+        location.href = 'result.html';
+      } catch {
+        btn.disabled = false;
+        btn.textContent = 'Retry Submit';
+        document.getElementById('submit-msg').innerHTML =
+          '⚠ Submission failed. Please check your connection and try again.';
+      }
+    }
+
+    // ── Beforeunload warning ───────────────────────────
+    window.addEventListener('beforeunload', e => {
+      if (!user.examAttempted && questions.length > 0) {
+        e.preventDefault(); e.returnValue = '';
+      }
+    });
+
+    loadExam();
+  </script>
+</body>
+</html>

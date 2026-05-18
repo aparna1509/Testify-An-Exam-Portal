@@ -1,0 +1,21 @@
+questionText,option1,option2,option3,option4,correctOption,category,difficulty
+IDE for Java?,Eclipse,VS Code,NetBeans,All of these,4,Java,Easy
+Which language is used for Android development?,Swift,Kotlin,Python,C++,2,Java,Easy
+Who developed Java?,Bjarne Stroustrup,James Gosling,Guido van Rossum,Dennis Ritchie,2,Java,Easy
+What is the output of 2 + 2 * 2?,8,6,4,10,2,Java,Medium
+Which keyword is used to inherit a class in Java?,extends,implements,inherits,super,1,Java,Easy
+SQL is a ___ language,Programming,Query,Markup,Scripting,2,SQL,Easy
+What does SELECT * do in SQL?,Deletes all rows,Updates all columns,Returns all columns,Counts all rows,3,SQL,Easy
+What does OOP stand for?,Object Oriented Programming,Open Object Protocol,Overhead Operation Process,None of these,1,Java,Easy
+Which data structure uses LIFO?,Queue,Stack,Array,LinkedList,2,OS,Medium
+What is a primary key in a database?,A foreign table link,A unique identifier,A null field,An index,2,SQL,Easy
+Which protocol is used for web communication?,FTP,SMTP,HTTP,SSH,3,OS,Easy
+What does CPU stand for?,Central Processing Unit,Computer Processing Unit,Core Processing Utility,Central Program Unit,1,OS,Easy
+Which of these is a cloud platform?,Django,AWS,Bootstrap,jQuery,2,OS,Medium
+What does API stand for?,Application Programming Interface,Automated Program Integration,Application Process Interface,None,1,Java,Medium
+Which symbol is used for comments in Java?,//,##,**,$$,1,Java,Easy
+What is the default value of int in Java?,null,1,0,-1,3,Java,Easy
+Which collection does not allow duplicates in Java?,ArrayList,LinkedList,Set,Array,3,Java,Medium
+Which SQL command removes a table?,DROP,DELETE,TRUNCATE,REMOVE,1,SQL,Medium
+What is normalization in databases?,Adding indexes,Removing redundancy,Backing up data,Encrypting data,2,SQL,Hard
+What does JOIN do in SQL?,Merges two databases,Combines rows from two tables,Filters rows,Sorts rows,2,SQL,Medium
